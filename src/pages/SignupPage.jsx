@@ -1,46 +1,65 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
+import { useNavigate, Link } from "react-router-dom";
 
 export default function SignupPage() {
   const navigate = useNavigate();
+
   const [formData, setFormData] = useState({
-    fullName: "",
+    name: "",
     email: "",
     password: "",
     confirmPassword: "",
   });
 
-  const handleChange = (e) => {
+  const handleChange = (e) =>
     setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
 
-  const handleSignup = (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
 
-    // ✅ Save the name to localStorage
-    localStorage.setItem("fullName", formData.fullName);
+    if (formData.password !== formData.confirmPassword) {
+      alert("Passwords do not match!");
+      return;
+    }
 
-    console.log("User signed up:", formData);
+    console.log("Signing up with:", formData);
 
-    // ✅ Redirect to the profile setup page
+    // ✅ Save user data
+    localStorage.setItem("userName", formData.name);
+    localStorage.setItem("userEmail", formData.email);
+
+    // ✅ Redirect to setup profile page
     navigate("/setup");
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-black text-white">
-      <div className="bg-gray-900 p-8 rounded-lg shadow-lg w-full max-w-md">
-        <h1 className="text-3xl mb-6 text-orange-500 font-bold text-center">
+    <div className="min-h-screen w-full bg-black flex items-center justify-center relative overflow-hidden px-4">
+      {/* Subtle rotating glow */}
+      <motion.div
+        className="absolute w-[600px] h-[600px] rounded-full bg-orange-500 opacity-10 blur-3xl"
+        animate={{ rotate: 360 }}
+        transition={{ repeat: Infinity, duration: 40, ease: "linear" }}
+      />
+
+      {/* Signup Glass Card */}
+      <motion.div
+        className="relative z-10 bg-white/5 backdrop-blur-lg border border-white/10 rounded-2xl shadow-2xl p-8 w-full max-w-md flex flex-col items-center"
+        initial={{ opacity: 0, y: 40 }}
+        animate={{ opacity: 1, y: 0 }}
+      >
+        <h1 className="text-4xl md:text-5xl font-extrabold text-white mb-8">
           Sign Up
         </h1>
 
-        <form className="space-y-4" onSubmit={handleSignup}>
+        <form onSubmit={handleSubmit} className="w-full space-y-4">
           <input
             type="text"
-            name="fullName"
+            name="name"
             placeholder="Full Name"
-            value={formData.fullName}
+            className="w-full p-4 rounded bg-gray-800 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500"
+            value={formData.name}
             onChange={handleChange}
-            className="w-full p-3 rounded bg-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500"
             required
           />
 
@@ -48,9 +67,9 @@ export default function SignupPage() {
             type="email"
             name="email"
             placeholder="Email"
+            className="w-full p-4 rounded bg-gray-800 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500"
             value={formData.email}
             onChange={handleChange}
-            className="w-full p-3 rounded bg-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500"
             required
           />
 
@@ -58,9 +77,9 @@ export default function SignupPage() {
             type="password"
             name="password"
             placeholder="Password"
+            className="w-full p-4 rounded bg-gray-800 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500"
             value={formData.password}
             onChange={handleChange}
-            className="w-full p-3 rounded bg-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500"
             required
           />
 
@@ -68,27 +87,30 @@ export default function SignupPage() {
             type="password"
             name="confirmPassword"
             placeholder="Confirm Password"
+            className="w-full p-4 rounded bg-gray-800 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500"
             value={formData.confirmPassword}
             onChange={handleChange}
-            className="w-full p-3 rounded bg-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500"
             required
           />
 
           <button
             type="submit"
-            className="w-full bg-orange-500 hover:bg-orange-600 p-3 rounded text-black font-bold transition-colors"
+            className="w-full bg-orange-500 hover:bg-orange-600 text-black font-bold py-4 rounded transition"
           >
             Sign Up
           </button>
         </form>
 
-        <p className="mt-6 text-sm text-center">
+        <p className="mt-6 text-sm text-gray-400 text-center">
           Already have an account?{" "}
-          <a href="/login" className="text-orange-500 hover:underline">
+          <Link
+            to="/login"
+            className="text-orange-500 hover:underline font-medium"
+          >
             Login
-          </a>
+          </Link>
         </p>
-      </div>
+      </motion.div>
     </div>
   );
 }

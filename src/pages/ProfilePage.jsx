@@ -1,83 +1,47 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { User, Activity, Target, Edit3, Upload, LogOut } from "lucide-react";
+import { Upload, Edit3, LogOut, Award, Activity, Target } from "lucide-react";
 import { motion } from "framer-motion";
-
-function ProgressRing({ progress = 70 }) {
-  const radius = 60;
-  const stroke = 8;
-  const normalizedRadius = radius - stroke * 2;
-  const circumference = normalizedRadius * 2 * Math.PI;
-  const strokeDashoffset = circumference - (progress / 100) * circumference;
-
-  return (
-    <svg height={radius * 2} width={radius * 2} className="rotate-[-90deg]">
-      <circle
-        stroke="#4B5563"
-        fill="transparent"
-        strokeWidth={stroke}
-        r={normalizedRadius}
-        cx={radius}
-        cy={radius}
-      />
-      <circle
-        stroke="#F97316"
-        fill="transparent"
-        strokeWidth={stroke}
-        strokeLinecap="round"
-        strokeDasharray={circumference + " " + circumference}
-        style={{ strokeDashoffset, transition: "stroke-dashoffset 0.5s" }}
-        r={normalizedRadius}
-        cx={radius}
-        cy={radius}
-      />
-      <text
-        x="50%"
-        y="50%"
-        textAnchor="middle"
-        dy=".3em"
-        fill="#F97316"
-        fontSize="20"
-        className="rotate-[90deg]"
-      >
-        {progress}%
-      </text>
-    </svg>
-  );
-}
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer
+} from "recharts";
+import { useNavigate } from "react-router-dom";
 
 export default function ProfilePage() {
-  const navigate = useNavigate();
-  const [profile, setProfile] = useState({
-    name: "",
-    age: "",
-    gender: "",
-    height: "",
-    weight: "",
-    activityLevel: "",
-    goal: "",
-  });
+  const [profile, setProfile] = useState({});
   const [editing, setEditing] = useState(false);
   const [formData, setFormData] = useState({});
-  const [goalProgress, setGoalProgress] = useState(70);
   const [profilePic, setProfilePic] = useState(null);
+  const navigate = useNavigate();
+
+  const data = [
+    { day: "Mon", progress: 30 },
+    { day: "Tue", progress: 50 },
+    { day: "Wed", progress: 60 },
+    { day: "Thu", progress: 80 },
+    { day: "Fri", progress: 70 },
+    { day: "Sat", progress: 90 },
+    { day: "Sun", progress: 85 },
+  ];
 
   useEffect(() => {
     const stored = localStorage.getItem("userProfile");
+    const storedName = localStorage.getItem("userName");
     const pic = localStorage.getItem("profilePic");
-    if (stored) {
-      const parsed = JSON.parse(stored);
-      setProfile(parsed);
-      setFormData(parsed);
-    }
-    if (pic) {
-      setProfilePic(pic);
-    }
-  }, []);
 
-  const handleEdit = () => {
-    setEditing(true);
-  };
+    let parsedProfile = {};
+    if (stored) parsedProfile = JSON.parse(stored);
+    if (!parsedProfile.name && storedName) parsedProfile.name = storedName;
+
+    setProfile(parsedProfile);
+    setFormData(parsedProfile);
+    if (pic) setProfilePic(pic);
+  }, []);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -85,6 +49,7 @@ export default function ProfilePage() {
 
   const handleSave = () => {
     localStorage.setItem("userProfile", JSON.stringify(formData));
+    localStorage.setItem("userName", formData.name || "");
     setProfile(formData);
     setEditing(false);
   };
@@ -92,118 +57,137 @@ export default function ProfilePage() {
   const handlePicUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
-
     const reader = new FileReader();
     reader.onloadend = () => {
-      const base64 = reader.result;
-      localStorage.setItem("profilePic", base64);
-      setProfilePic(base64);
+      localStorage.setItem("profilePic", reader.result);
+      setProfilePic(reader.result);
     };
     reader.readAsDataURL(file);
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("userProfile");
-    localStorage.removeItem("profilePic");
+    localStorage.clear();
     navigate("/login");
   };
 
   return (
-    <div className="min-h-screen w-full bg-black text-white flex flex-col items-center justify-center p-8 relative overflow-hidden">
+    <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center p-4 relative overflow-hidden">
+      {/* Background Glow */}
       <motion.div
-        className="absolute w-[800px] h-[800px] rounded-full bg-orange-500 opacity-10 blur-3xl"
+        className="absolute w-[700px] h-[700px] bg-orange-500 opacity-10 blur-3xl rounded-full"
         animate={{ rotate: 360 }}
-        transition={{ repeat: Infinity, duration: 20, ease: "linear" }}
-      ></motion.div>
+        transition={{ repeat: Infinity, duration: 30, ease: "linear" }}
+      />
 
+      {/* Glass Card */}
       <motion.div
-        className="bg-gray-900 p-8 rounded-2xl shadow-2xl w-full max-w-2xl text-center relative z-10"
+        className="relative z-10 backdrop-blur-lg bg-white/5 border border-white/10 rounded-2xl shadow-2xl p-6 w-full max-w-xl flex flex-col items-center"
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
       >
-        <div className="w-28 h-28 mx-auto mb-6 rounded-full overflow-hidden bg-orange-500 flex items-center justify-center text-black text-4xl font-bold relative">
-          {profilePic ? (
-            <img
-              src={profilePic}
-              alt="Profile"
-              className="w-full h-full object-cover"
-            />
-          ) : (
-            <User size={48} />
-          )}
+        {/* Profile Pic - Static */}
+        <div className="relative mb-6">
+          <div className="w-32 h-32 rounded-full border-4 border-orange-500 flex items-center justify-center overflow-hidden">
+            {profilePic ? (
+              <img
+                src={profilePic}
+                alt="Profile"
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <div className="text-4xl font-bold text-orange-500">👤</div>
+            )}
+          </div>
         </div>
 
-        <div className="mb-4">
-          <label
-            htmlFor="profilePicUpload"
-            className="flex items-center justify-center gap-2 text-sm text-gray-300 hover:text-orange-500 cursor-pointer"
-          >
-            <Upload size={18} /> Upload Profile Picture
-          </label>
-          <input
-            id="profilePicUpload"
-            type="file"
-            accept="image/*"
-            onChange={handlePicUpload}
-            className="hidden"
-          />
-        </div>
+        {/* Upload */}
+        <label
+          htmlFor="profilePicUpload"
+          className="flex items-center gap-2 text-sm text-gray-300 hover:text-orange-500 cursor-pointer mb-4"
+        >
+          <Upload size={16} /> Upload Photo
+        </label>
+        <input
+          id="profilePicUpload"
+          type="file"
+          accept="image/*"
+          onChange={handlePicUpload}
+          className="hidden"
+        />
 
-        <h2 className="text-3xl font-bold mb-2">{profile.name || "Your Name"}</h2>
-        <p className="text-gray-400 mb-6">
-          Age: {profile.age || "-"} | Gender: {profile.gender || "-"}
+        {/* Name & Details */}
+        <motion.h2
+          className="text-3xl font-bold mb-1"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+        >
+          {profile?.name || "Your Name"}
+        </motion.h2>
+        <p className="text-gray-400 mb-4">
+          Age: {profile?.age || "-"} | Gender: {profile?.gender || "-"}
         </p>
 
-        <div className="flex flex-col md:flex-row justify-around gap-8 mb-8">
+        {/* Stats */}
+        <div className="flex flex-col md:flex-row gap-8 mb-6 w-full justify-around">
           <div className="flex flex-col items-center">
-            <ProgressRing progress={goalProgress} />
-            <p className="mt-2 text-gray-400">Goal Progress</p>
+            <Award className="text-orange-500 mb-2" />
+            <p className="text-lg font-bold">3 Badges</p>
+            <span className="text-gray-400 text-sm">Achievements</span>
           </div>
-          <div className="flex flex-col gap-4 text-left">
-            <div className="flex items-center gap-2">
-              <Activity className="text-orange-500" />{" "}
-              <span>{profile.activityLevel || "-"} activity</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Target className="text-orange-500" />{" "}
-              <span>Goal: {profile.goal || "-"}</span>
-            </div>
-            <div>
-              Height:{" "}
-              <span className="text-orange-500 font-bold">
-                {profile.height || "-"} cm
-              </span>
-            </div>
-            <div>
-              Weight:{" "}
-              <span className="text-orange-500 font-bold">
-                {profile.weight || "-"} kg
-              </span>
-            </div>
+          <div className="flex flex-col items-center">
+            <Activity className="text-orange-500 mb-2" />
+            <p className="text-lg font-bold">{profile?.activityLevel || "-"}</p>
+            <span className="text-gray-400 text-sm">Activity</span>
+          </div>
+          <div className="flex flex-col items-center">
+            <Target className="text-orange-500 mb-2" />
+            <p className="text-lg font-bold">{profile?.goal || "-"}</p>
+            <span className="text-gray-400 text-sm">Goal</span>
           </div>
         </div>
 
-        <div className="flex flex-col md:flex-row justify-center gap-4">
-          <button
-            onClick={handleEdit}
-            className="flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-600 text-black px-6 py-3 rounded font-bold transition"
-          >
-            <Edit3 size={20} />
-            Edit Profile
-          </button>
+        {/* Fancy Chart */}
+        <div className="w-full bg-gradient-to-b from-black to-gray-900 rounded-xl p-4 mb-6 shadow-inner">
+          <ResponsiveContainer width="100%" height={200}>
+            <LineChart data={data}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#555" />
+              <XAxis dataKey="day" stroke="#ccc" />
+              <YAxis stroke="#ccc" />
+              <Tooltip
+                contentStyle={{ backgroundColor: "#111", border: "none" }}
+              />
+              <Line
+                type="monotone"
+                dataKey="progress"
+                stroke="#f97316"
+                strokeWidth={3}
+                dot={{ r: 4, stroke: "#fff", fill: "#f97316" }}
+                activeDot={{ r: 6 }}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
 
+        {/* Buttons */}
+        <div className="flex flex-wrap gap-4">
+          <button
+            onClick={() => setEditing(true)}
+            className="flex items-center gap-2 px-5 py-3 bg-orange-500 hover:bg-orange-600 text-black font-bold rounded-full transition"
+          >
+            <Edit3 size={18} /> Edit
+          </button>
           <button
             onClick={handleLogout}
-            className="flex items-center justify-center gap-2 border border-orange-500 hover:bg-orange-500 hover:text-black text-orange-500 px-6 py-3 rounded font-bold transition"
+            className="flex items-center gap-2 px-5 py-3 border border-orange-500 hover:bg-orange-500 hover:text-black rounded-full transition"
           >
-            <LogOut size={20} />
-            Logout
+            <LogOut size={18} /> Logout
           </button>
         </div>
       </motion.div>
 
+      {/* Edit Modal */}
       {editing && (
-        <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-20 p-4">
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-20 p-4">
           <div className="bg-gray-900 p-6 rounded-lg w-full max-w-md">
             <h3 className="text-xl mb-4 font-bold text-orange-500">
               Edit Profile
@@ -211,14 +195,14 @@ export default function ProfilePage() {
             <div className="space-y-4">
               <input
                 name="name"
-                value={formData.name}
+                value={formData.name || ""}
                 onChange={handleChange}
                 placeholder="Name"
                 className="w-full p-3 rounded bg-gray-800 text-white"
               />
               <input
                 name="age"
-                value={formData.age}
+                value={formData.age || ""}
                 onChange={handleChange}
                 placeholder="Age"
                 type="number"
@@ -226,7 +210,7 @@ export default function ProfilePage() {
               />
               <input
                 name="height"
-                value={formData.height}
+                value={formData.height || ""}
                 onChange={handleChange}
                 placeholder="Height (cm)"
                 type="number"
@@ -234,7 +218,7 @@ export default function ProfilePage() {
               />
               <input
                 name="weight"
-                value={formData.weight}
+                value={formData.weight || ""}
                 onChange={handleChange}
                 placeholder="Weight (kg)"
                 type="number"
